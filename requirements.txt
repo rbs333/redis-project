@@ -1,0 +1,8 @@
+openai
+tiktoken
+langchain
+unstructured[pdf]
+sentence-transformers
+pandas
+python-dotenv
+redisvl>=0.1.0
