@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Flask-SocketIO TestBot</title>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
+      integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js"
+      integrity="sha512-aMGMvNYu8Ue4G+fHa359jcPb1u+ytAF+P2SCb+PxrjCdO3n3ZTxJ30zuH39rimUggmTwmh2u7wvQsDTHESnmfQ=="
+      crossorigin="anonymous"
+    ></script>
+    <script type="text/javascript" charset="utf-8">
+      $(document).ready(function () {
+        var socket = io();
+        var chat = "";
+
+        function updateChatBox(data) {
+          var msgText = `<div>${data.user}: ${data.msg}</div>`;
+          chat += msgText;
+
+          var chatBox = document.getElementById("chatBox");
+          chatBox.innerHTML = chat;
+        }
+
+        socket.on("connect", function () {
+          socket.emit("test_connection", { data: "I'm connected!" });
+        });
+
+        socket.on("test_confirm", function () {
+          console.log("called me back");
+        });
+
+        socket.on("add_msg", (data) => {
+          updateChatBox(data);
+        });
+
+        $("#sendMsgInput").keypress(function (e) {
+          var code = e.keyCode || e.which;
+          if (code == 13) {
+            text = $("#sendMsgInput").val();
+            data = { user: "you", msg: text };
+            updateChatBox(data);
+            $("#sendMsgInput").val("");
+            socket.emit("add_msg", data);
+          }
+        });
+      });
+    </script>
+  </head>
+
+  <body>
+    <h1>Hello!</h1>
+    <br />
+    <label>Chat with bot</label>
+    <input type="text" id="sendMsgInput" placeholder="type message" />
+    <div id="chatBox" class="chatBox"></div>
+  </body>
+</html>
