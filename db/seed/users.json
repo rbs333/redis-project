@@ -1,0 +1,37 @@
+[
+  {
+    "username": "hank",
+    "password": "password",
+    "userId": "1",
+    "recentChatHistory": [],
+    "relevantInfo": []
+  },
+  {
+    "username": "peggy",
+    "password": "password",
+    "userId": "2",
+    "recentChatHistory": [],
+    "relevantInfo": []
+  },
+  {
+    "username": "bobby",
+    "password": "password",
+    "userId": "3",
+    "recentChatHistory": [],
+    "relevantInfo": []
+  },
+  {
+    "username": "luanne",
+    "password": "password",
+    "userId": "4",
+    "recentChatHistory": [],
+    "relevantInfo": []
+  },
+  {
+    "username": "boomhauer",
+    "password": "password",
+    "userId": "5",
+    "recentChatHistory": [],
+    "relevantLongTerm": []
+  }
+]

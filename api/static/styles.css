@@ -1,0 +1,42 @@
+html,
+body {
+  margin: 0;
+}
+
+header {
+  height: 2rem;
+  background-color: #d82c20;
+  color: white;
+  padding: 1rem;
+}
+
+body {
+  height: calc(100vh - 8rem);
+}
+
+.content-wrapper {
+  padding: 1rem 2rem;
+}
+
+.chat-box {
+  width: calc(100% - 2.2rem);
+  padding: 1rem;
+  border: 0.1rem solid black;
+  height: 20rem;
+  overflow: scroll;
+  border-radius: 0.5rem;
+}
+
+.text-box {
+  width: calc(100% - 2.2rem);
+  padding: 1rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+}
+
+footer {
+  padding: 1rem;
+  height: 2rem;
+  background-color: #d82c20;
+  color: white;
+}

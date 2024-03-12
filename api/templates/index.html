@@ -1,7 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html style="margin: 0">
   <head>
     <title>Flask-SocketIO TestBot</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css')}}"
+    />
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
       integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
@@ -18,20 +22,23 @@
         var chat = "";
 
         function updateChatBox(data) {
-          var msgText = `<div>${data.user}: ${data.msg}</div>`;
+          var msgText = `${data.username}: ${data.msg}`;
           chat += msgText;
+          chat += "<br>";
 
           var chatBox = document.getElementById("chatBox");
           chatBox.innerHTML = chat;
         }
 
-        socket.on("connect", function () {
-          socket.emit("test_connection", { data: "I'm connected!" });
-        });
+        function getSelectedUser() {
+          var checkedRadioButton = document.querySelector(
+            'input[name="userOption"]:checked'
+          );
 
-        socket.on("test_confirm", function () {
-          console.log("called me back");
-        });
+          console.log(checkedRadioButton.value);
+
+          return JSON.parse(checkedRadioButton.value);
+        }
 
         socket.on("add_msg", (data) => {
           updateChatBox(data);
@@ -41,21 +48,86 @@
           var code = e.keyCode || e.which;
           if (code == 13) {
             text = $("#sendMsgInput").val();
-            data = { user: "you", msg: text };
+            var user = getSelectedUser();
+            data = { ...user, msg: text };
             updateChatBox(data);
             $("#sendMsgInput").val("");
             socket.emit("add_msg", data);
           }
         });
+
+        // TODO: add load user data functionality
+        // $("form#userOption").submit(function (e) {
+        //   var selected = getSelectedUser();
+        //   console.log("submit!", selected);
+        //   socket.emit("change_user", selected);
+        //   return False;
+        // });
       });
     </script>
   </head>
 
+  <header>Redis Chat Project</header>
   <body>
-    <h1>Hello!</h1>
-    <br />
-    <label>Chat with bot</label>
-    <input type="text" id="sendMsgInput" placeholder="type message" />
-    <div id="chatBox" class="chatBox"></div>
+    <div class="content-wrapper">
+      <h1>Recipe Helper 5000</h1>
+
+      <h3>Choose your user</h3>
+      <form class="radio-btns" action="#">
+        <label>
+          <input
+            type="radio"
+            name="userOption"
+            value='{"userId": "1", "username": "hank"}'
+            checked
+          />
+          Hank</label
+        >
+        <label>
+          <input
+            type="radio"
+            name="userOption"
+            value='{"userId": "2", "username": "peggy"}'
+          />
+          Peggy
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="userOption"
+            value='{"userId": "3", "username": "bobby"}'
+          />
+          Bobby
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="userOption"
+            value='{"userId": "4", "username": "luanne"}'
+          />
+          Luanne
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="userOption"
+            value='{"userId": "5", "username": "boomhauer"}'
+          />
+          Boomhauer
+        </label>
+        <input type="submit" value="choose" />
+      </form>
+      <br />
+
+      <label>Chat with bot</label>
+      <div id="chatBox" class="chat-box"></div>
+      <input
+        type="text"
+        id="sendMsgInput"
+        placeholder="type message"
+        class="text-box"
+      />
+    </div>
   </body>
+  <footer>robert.b.shelton.42@gmail.com</footer>
 </html>

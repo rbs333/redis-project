@@ -1,9 +1,29 @@
-from flask import Flask, render_template
+import os
+from redis import Redis
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO, send, emit
+from chat_app.chat import gen_answer
+from db.llm_memory import LLMMemoryLayer
+from db.vector_store import get_vector_index
+from functools import wraps
+import asyncio
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode=None)
+
+# TODO: handle chat instance creation and management more elegantly.
+client = Redis.from_url(os.environ["REDIS_URL"])
+memory = LLMMemoryLayer(client)
+vector_index = get_vector_index(client)
+
+
+def async_action(f):
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        return asyncio.run(f(*args, **kwargs))
+
+    return wrapped
 
 
 @app.route("/")
@@ -12,22 +32,14 @@ def index():
 
 
 @socketio.event
-def test_connection(data):
-    print(f"pinged from browser {data}")
-    emit("test_confirm", "confirmed test!")
+@async_action
+async def add_msg(data):
+    # TODO: use something better like pydantic for deserialization
+    user_id = data["userId"]
+    msg = data["msg"]
 
-
-@socketio.event
-def add_msg(data):
-    print(f"you asked bot: {data}")
-    res = {"user": "bot", "msg": "cool story bro"}
-    emit("add_msg", res)
-
-
-@socketio.on("message")
-def handle_message(data):
-    print("received message: " + data)
-    send("hello from the other side")
+    answer = await gen_answer(memory, user_id, msg, vector_index)
+    emit("add_msg", {"username": "bot", "msg": answer})
 
 
 if __name__ == "__main__":

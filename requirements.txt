@@ -6,3 +6,4 @@ sentence-transformers
 pandas
 python-dotenv
 redisvl>=0.1.0
+redis

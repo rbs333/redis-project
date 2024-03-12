@@ -14,5 +14,6 @@ python-socketio
 six==1.11.0
 Werkzeug==2.2.3
 zipp==3.8.1
+redis
 
 # stole from flask-socketio example
