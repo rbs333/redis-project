@@ -10,17 +10,24 @@ import json
 hf = HFTextVectorizer(settings.VECTORIZER)
 
 
-async def categorize_user_input(user_input):
+async def extract_user_info(user_input):
     """calls openai and decodes the information type"""
 
     system_prompt = "You are a pre-processing step for a recipe recommendation tool"
 
     user_prompt = f"""
-    The first objective is to determine if the following query is one of 2 potential categories: 1) recipe_rec task 2) other. Label category recipe_rec if the goal of the query is to generate a recipe. If it is of category "other" you will generate a response to the query provided and add to the resulting json response.
+    Your objective is to capture any relevant info expressed within the query that 
+    will help us understand the type of recipes a user likes. Relevant info could be 
+    "I don't love green beans" or any dietary restrictions such as gluten-free, vegetarian, 
+    paleo, etc and/or any allergies or phrases like "I hate <thing>".  Make sure to 
+    capture this information with a word that express sentiment such as "likes", 
+    "dislikes", "allergic to", etc. to best understand the user's relationship with the 
+    relevant info.
 
-    The second objective is to capture any relevant info expressed within the query regardless of it's category that will help us understand the type of recipes a user likes. Relevant info could be "I don't love green beans" or any dietary restrictions such as gluten-free, vegetarian, paleo, etc and/or any allergies or phrases like "I hate <thing>".  Make sure to capture this information with a word that express sentiment such as "likes", "dislikes", "allergic to", etc. to best understand the user's relationship with the relevant info.
-
-    Return the response as a json with the following attributes "category": "objective 1 category", "relevant_info": "list[string]", "answer": "Response to query". The category field is either the string "recipe_rec" or "other" from goal 1. The preference field is a list of preferences saved as strings from the query. The requirements field is a list of requirements saves as string from the query. A preference can not be a requirement and vice versa. The answer field is a generated response to the provided query if the category is "other" else leave this field as an empty string.
+    Return the response as a json with the following attribute 
+    "relevant_info": "list[string]". All relevant info should be returned as a simple
+    list of strings. If there was no added relevant info return the attribute with an 
+    empty list. Always return as a parsable JSON string object.
     
     Query: {user_input}
   """
@@ -31,9 +38,12 @@ async def categorize_user_input(user_input):
 
 
 # this is when we want to respond to a message we first need to get the most relevant data to answer the question from the db
-def retrieve_context(index, query):
+def retrieve_context(index, query, relevant_info):
+    """When we hit the vector store we want matches not only on the query but also the relevant info"""
 
-    query_embedding = hf.embed(query)
+    query_embedding = hf.embed(
+        f"{query}. Relevant user info: {','.join(relevant_info)}"
+    )
 
     vector_query = VectorQuery(
         vector=query_embedding,
@@ -54,10 +64,10 @@ def retrieve_context(index, query):
 def gen_final_prompt(query, vector_context, chat_context, relevant_info) -> str:
     """put together the user's question and the context from the db and ask the generative AI to make an answer based in that world"""
 
-    return f"""Use the provided context below to generate recipe(s) for the user.
-    Utilize the recipe starters, user relevant info, and chat history to return a relevant response
-    to the user's query. Primarily utilize the recipe starters as the base of your response but supplement
-    as necessary.
+    return f"""Use the provided context below to generate recipe(s) for the user
+    and respond to questions as needed. Make use of the recipe starters, user relevant info, 
+    and chat history to return a relevant response to the user's query. When generating a recipe 
+    response, use the recipe starters as the base of your response but supplement as necessary.
 
     Recent chat history:
 
@@ -84,7 +94,10 @@ async def vector_question(
     user_memory: dict,
     vector_index: SearchIndex,
 ) -> str:
-    recipe_context = retrieve_context(vector_index, user_query)
+    # make sure to embed relevant info as well as the query itself
+    recipe_context = retrieve_context(
+        vector_index, user_query, user_memory["relevantInfo"]
+    )
 
     system_prompt = "You are a tool helping people pick recipes."
     final_prompt = gen_final_prompt(
@@ -104,15 +117,16 @@ async def vector_question(
 async def gen_answer(memory: LLMMemoryLayer, user_id, msg, vector_index):
     memory.add_user_chat_msg(user_id, msg)
 
-    input_meta = await categorize_user_input(msg)
+    input_meta = await extract_user_info(msg)
 
     if len(input_meta["relevant_info"]):
         memory.add_user_relevant_info(user_id, input_meta["relevant_info"])
 
     # if not recipe question (i.e. just statement) short-circuit and reduce num api calls
-    if input_meta["answer"]:
-        memory.add_user_chat_msg(user_id, f"bot:{input_meta["answer"]}")
-        return input_meta["answer"]
+    # this was the problematic part of the code
+    # if input_meta["answer"]:
+    #     memory.add_user_chat_msg(user_id, f"bot:{input_meta['answer']}")
+    #     return input_meta["answer"]
 
     user_memory = memory.fetch_user(user_id)
 
